@@ -1,0 +1,10 @@
+flask
+openai
+groq
+chromadb
+sentence-transformers
+deep-translator
+twilio
+python-dotenv
+requests
+gunicorn
