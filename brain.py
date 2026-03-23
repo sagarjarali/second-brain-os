@@ -4,11 +4,27 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 
+load_dotenv()
+
 embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
-chroma_client = chromadb.PersistentClient(path="./schemes_db")
+chroma_client = chromadb.Client()
 collection = chroma_client.get_or_create_collection(name="schemes")
 
-load_dotenv()
+def load_schemes():
+    if collection.count() == 0:
+        with open("schemes.txt", "r") as file:
+            text = file.read()
+        chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
+        for i, chunk in enumerate(chunks):
+            embedding = embedding_model.encode(chunk).tolist()
+            collection.add(
+                ids=[str(i)],
+                embeddings=[embedding],
+                documents=[chunk]
+            )
+        print("Schemes loaded successfully")
+
+load_schemes()
 
 api_key = os.getenv("GROQ_API_KEY")
 
@@ -36,7 +52,7 @@ def get_relevant_schemes(question):
 
 def ask_ai(question):
     context = get_relevant_schemes(question)
-    
+
     question_with_context = f"""Use this information to answer the question:
 
 {context}
@@ -61,6 +77,7 @@ Question: {question}"""
     })
 
     return answer
+
 if __name__ == "__main__":
     while True:
         question = input("You: ")
