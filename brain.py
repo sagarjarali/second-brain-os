@@ -4,75 +4,82 @@ import os
 
 load_dotenv()
 
-api_key = os.getenv("GROQ_API_KEY")
-
+# ---------- CLIENT ----------
 client = OpenAI(
     base_url="https://api.groq.com/openai/v1",
-    api_key=api_key
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
+# ---------- LOAD SCHEMES ----------
 def load_schemes():
-    with open("schemes.txt", "r") as file:
-        text = file.read()
-    chunks = [chunk.strip() for chunk in text.split("\n\n") if chunk.strip()]
-    return chunks
+    try:
+        with open("schemes.txt", "r", encoding="utf-8") as f:
+            text = f.read()
+        chunks = [c.strip() for c in text.split("\n\n") if c.strip()]
+        return chunks
+    except Exception as e:
+        print("SCHEME LOAD ERROR:", e)
+        return []
 
 schemes = load_schemes()
 
-history = [
-    {
-        "role": "system",
-        "content": "You are a helpful assistant for Karnataka farmers. Keep answers simple and practical."
-    }
-]
-
+# ---------- SIMPLE RETRIEVAL ----------
 def get_relevant_schemes(question):
-    question_lower = question.lower()
-    relevant = []
-    for scheme in schemes:
-        scheme_lower = scheme.lower()
-        words = question_lower.split()
-        for word in words:
-            if len(word) > 3 and word in scheme_lower:
-                if scheme not in relevant:
-                    relevant.append(scheme)
-                break
-    if not relevant:
-        relevant = schemes[:3]
-    context = "\n\n".join(relevant[:3])
-    return context
+    q = question.lower()
 
+    matches = []
+    for s in schemes:
+        s_low = s.lower()
+        for w in q.split():
+            if len(w) > 3 and w in s_low:
+                matches.append(s)
+                break
+
+    if not matches:
+        matches = schemes[:3]
+
+    return "\n\n".join(matches[:3])
+
+
+# ---------- MAIN AI ----------
 def ask_ai(question):
+
     context = get_relevant_schemes(question)
 
-    question_with_context = f"""Use this information to answer the question:
+    prompt = f"""
+You are a helpful Karnataka government schemes assistant.
 
+Answer in simple practical language.
+
+Information:
 {context}
 
-Question: {question}"""
+Farmer Question:
+{question}
+"""
 
-    history.append({
-        "role": "user",
-        "content": question_with_context
-    })
+    messages = [
+        {
+            "role": "system",
+            "content": "You help farmers understand government schemes simply."
+        },
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=history
-    )
+    try:
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=messages,
+            max_tokens=250,
+            temperature=0.3
+        )
 
-    answer = response.choices[0].message.content
+        answer = response.choices[0].message.content
+        return answer
 
-    history.append({
-        "role": "assistant",
-        "content": answer
-    })
-
-    return answer
-
-if __name__ == "__main__":
-    while True:
-        question = input("You: ")
-        answer = ask_ai(question)
-        print("AI:", answer)
-        print()
+    except Exception as e:
+        print("GROQ ERROR:", e)
+        return "ಕ್ಷಮಿಸಿ, ಈಗ ಸರ್ವರ್ ಸಮಸ್ಯೆ ಇದೆ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
