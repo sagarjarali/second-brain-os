@@ -28,12 +28,20 @@ schemes = load_schemes()
 # ---------------------------
 def get_relevant_scheme(question):
     q = question.lower()
+    best_match = None
+    best_score = 0
 
     for s in schemes:
-        if any(word in s.lower() for word in q.split() if len(word) > 3):
-            return s
+        score = sum(1 for word in q.split() if len(word) > 3 and word in s.lower())
+        if score > best_score:
+            best_score = score
+            best_match = s
 
-    return schemes[0] if schemes else ""
+    # Only return if at least 2 words matched
+    if best_score >= 2:
+        return best_match
+
+    return ""
 
 
 # ---------------------------
@@ -117,6 +125,12 @@ def ask_ai(question):
     # 2. scheme context
     context = get_relevant_scheme(question)
 
+    if context:
+        context_text = f"ಮಾಹಿತಿ:\n{context}"
+    else:
+        context_text = "ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ಯೋಜನೆ ಮಾಹಿತಿ ಇಲ್ಲ. ಸಾಮಾನ್ಯ ಜ್ಞಾನದಿಂದ ಉತ್ತರಿಸಿ."
+    
+
     prompt = f"""
 ನೀವು ಉತ್ತರ ಕರ್ನಾಟಕದ ರೈತರಿಗೆ ಸಹಾಯ ಮಾಡುವ ಸರಳ ಸಹಾಯಕ.
 
@@ -132,8 +146,7 @@ def ask_ai(question):
 - "ನಮಸ್ಕಾರ", "ಧನ್ಯವಾದ" ತರಹದ ಹೆಚ್ಚುವರಿ ಮಾತು ಬೇಡ unless user greets
 - ಉತ್ತರ 160 ಅಕ್ಷರಗಳೊಳಗೆ ಇರಲಿ if possible
 
-ಮಾಹಿತಿ:
-{context}
+{context_text}
 
 ರೈತನ ಪ್ರಶ್ನೆ:
 {question}
