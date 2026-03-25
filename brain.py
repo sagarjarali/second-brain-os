@@ -48,28 +48,22 @@ def get_relevant_scheme(question):
 # ---------------------------
 def get_canned_reply(question):
     q = question.strip().lower()
+    words_in_question = q.split()
 
-    greeting_words = [
-        "hi", "hello", "namaste", "good morning", "good evening"
-    ]
-    thanks_words = [
-        "thanks", "thank you", "thank"
-    ]
-    help_words = [
-        "who are you", "what do you do", "what can you do"
-    ]
+    greeting_words = ["hi", "hello", "namaste", "good morning", "good evening"]
+    thanks_words = ["thanks", "thank you", "thank"]
+    help_words = ["who are you", "what do you do", "what can you do"]
 
-    if any(word in q for word in greeting_words):
+    if any(word in words_in_question for word in greeting_words):
         return "ನಮಸ್ಕಾರ. ನಿಮಗೆ ಯಾವ ಯೋಜನೆ ಬಗ್ಗೆ ಮಾಹಿತಿ ಬೇಕೋ ಕೇಳಿ."
 
-    if any(word in q for word in thanks_words):
+    if any(word in words_in_question for word in thanks_words):
         return "ಸರಿ. ಇನ್ನೇನಾದರೂ ಸಹಾಯ ಬೇಕಿದ್ದರೆ ಕೇಳಿ."
 
-    if any(word in q for word in help_words):
+    if any(word in words_in_question for word in help_words):
         return "ನಾನು ರೈತರಿಗೆ ಸರ್ಕಾರಿ ಯೋಜನೆ ಮಾಹಿತಿ ಹೇಳ್ತೀನಿ. ನಿಮ್ಮ ಜಮೀನು, ಬೆಳೆ, ಅಥವಾ ಯೋಜನೆ ಬಗ್ಗೆ ಕೇಳಿ."
 
     return None
-
 
 # ---------------------------
 # CLEAN OUTPUT
@@ -113,6 +107,7 @@ def ask_ai(question):
         return canned
 
     context = get_relevant_scheme(question)
+    print("CONTEXT FOUND:", context[:100] if context else "NOTHING")
 
     prompt = f"""
 You are a helpful assistant for Karnataka farmers.
