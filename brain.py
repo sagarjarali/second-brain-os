@@ -65,6 +65,7 @@ def get_canned_reply(question):
 
     return None
 
+
 # ---------------------------
 # CLEAN OUTPUT
 # ---------------------------
@@ -101,13 +102,11 @@ def clean_answer(text):
 # MAIN AI
 # ---------------------------
 def ask_ai(question):
-    print("QUESTION RECEIVED IN ASK_AI:", question)  # ADD THIS LINE
     canned = get_canned_reply(question)
     if canned:
         return canned
 
     context = get_relevant_scheme(question)
-    print("CONTEXT FOUND:", context[:100] if context else "NOTHING")
 
     prompt = f"""
 You are a helpful assistant for Karnataka farmers.
