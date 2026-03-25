@@ -107,6 +107,7 @@ def clean_answer(text):
 # MAIN AI
 # ---------------------------
 def ask_ai(question):
+    print("QUESTION RECEIVED IN ASK_AI:", question)  # ADD THIS LINE
     canned = get_canned_reply(question)
     if canned:
         return canned
