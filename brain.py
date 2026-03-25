@@ -56,7 +56,7 @@ def get_canned_reply(question):
         "thanks", "thank you", "thank"
     ]
     help_words = [
-        "who are you", "what do you do", "help", "what can you do"
+        "who are you", "what do you do", "what can you do"
     ]
 
     if any(word in q for word in greeting_words):
