@@ -84,7 +84,8 @@ def clean_answer(text):
 
     for p in parts:
         p = p.strip()
-        if p:
+        # Only add sentence if it ends with proper punctuation
+        if p and p[-1] in ".?!।":
             complete_parts.append(p)
         if len(complete_parts) == 2:
             break
@@ -151,7 +152,7 @@ def ask_ai(question):
                     "content": prompt
                 }
             ],
-            max_tokens=120,
+            max_tokens=180,
             temperature=0.2
         )
 
