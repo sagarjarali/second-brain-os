@@ -9,19 +9,18 @@ client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY")
 )
 
-# ---------- LOAD SCHEMES ----------
 def load_schemes():
     try:
         with open("schemes.txt", "r", encoding="utf-8") as f:
             text = f.read()
         chunks = [c.strip() for c in text.split("\n\n") if c.strip()]
         return chunks
-    except:
+    except Exception as e:
+        print("SCHEME LOAD ERROR:", e)
         return []
 
 schemes = load_schemes()
 
-# ---------- LIGHT RETRIEVAL ----------
 def get_relevant_scheme(question):
     q = question.lower()
 
@@ -29,44 +28,43 @@ def get_relevant_scheme(question):
         if any(word in s.lower() for word in q.split() if len(word) > 3):
             return s
 
-    # fallback
     return schemes[0] if schemes else ""
 
-
-# ---------- MAIN AI ----------
 def ask_ai(question):
-
     context = get_relevant_scheme(question)
 
     prompt = f"""
-ನೀವು ಉತ್ತರ ಕರ್ನಾಟಕದ ರೈತರಿಗೆ ಸಹಾಯ ಮಾಡುವ ಸ್ನೇಹಪೂರ್ಣ ಕೃಷಿ ಸಹಾಯಕ.
+ನೀವು ಉತ್ತರ ಕರ್ನಾಟಕದ ರೈತರಿಗೆ ಸಹಾಯ ಮಾಡುವ ಸ್ನೇಹಪೂರ್ಣ ಸಹಾಯಕ.
 
-ಸರಳವಾಗಿ ಮಾತನಾಡಿ.
-ಹಳ್ಳಿ ಶೈಲಿಯಲ್ಲಿ ಉತ್ತರ ನೀಡಿ.
-ಚಿಕ್ಕ ವಾಕ್ಯ ಬಳಸಿ.
-ಪುಸ್ತಕದ ಕನ್ನಡ ಬೇಡ.
+ನಿಯಮಗಳು:
+- ಸರಳ ಕನ್ನಡದಲ್ಲಿ ಉತ್ತರಿಸಿ
+- ಉತ್ತರ ಕರ್ನಾಟಕದ ಮಾತಿನ ಶೈಲಿ ಬಳಸಿ
+- ಪುಸ್ತಕದ ಕನ್ನಡ ಬೇಡ
+- 3 ರಿಂದ 4 ಚಿಕ್ಕ ವಾಕ್ಯಗಳಲ್ಲಿ ಉತ್ತರಿಸಿ
+- ವಾಕ್ಯಗಳನ್ನು ಪೂರ್ಣವಾಗಿ ಮುಗಿಸಿ
+- ಮಧ್ಯದಲ್ಲಿ ನಿಲ್ಲಿಸಬೇಡಿ
+- ಅನಗತ್ಯ ಪರಿಚಯ ಬೇಡ
 
 ಮಾಹಿತಿ:
 {context}
 
-ರೈತರ ಪ್ರಶ್ನೆ:
+ರೈತನ ಪ್ರಶ್ನೆ:
 {question}
-
-ಉತ್ತರವನ್ನು 4–5 ಸಾಲಿನೊಳಗೆ ನೀಡಿ.
 """
 
     try:
         response = client.chat.completions.create(
             model="llama-3.3-70b-versatile",
             messages=[
-                {"role": "system", "content": "You help Karnataka farmers."},
+                {"role": "system", "content": "You help Karnataka farmers in simple spoken Kannada."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=150,
-            temperature=0.4
+            max_tokens=220,
+            temperature=0.3
         )
 
-        answer = response.choices[0].message.content
+        answer = response.choices[0].message.content.strip()
+
         return answer
 
     except Exception as e:
