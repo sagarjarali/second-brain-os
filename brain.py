@@ -32,16 +32,15 @@ def get_relevant_scheme(question):
     best_score = 0
 
     for s in schemes:
-        score = sum(1 for word in q.split() if len(word) > 3 and word in s.lower())
+        score = sum(1 for word in q.split() if len(word) > 2 and word in s.lower())
         if score > best_score:
             best_score = score
             best_match = s
 
-    # Only return if at least 2 words matched
-    if best_score >= 2:
+    if best_score >= 1:
         return best_match
 
-    return ""
+    return "\n\n".join(schemes[:3])
 
 
 # ---------------------------
@@ -51,13 +50,13 @@ def get_canned_reply(question):
     q = question.strip().lower()
 
     greeting_words = [
-        "hi", "hello", "namaste", "ನಮಸ್ಕಾರ", "ಹಲೋ", "hello ai"
+        "hi", "hello", "namaste", "good morning", "good evening"
     ]
     thanks_words = [
-        "thanks", "thank you", "ಧನ್ಯವಾದ", "ಧನ್ಯವಾದಗಳು"
+        "thanks", "thank you", "thank"
     ]
     help_words = [
-        "ಯಾರು ನೀನು", "ನೀನು ಯಾರು", "ಏನು ಮಾಡುತ್ತೀಯ", "ಏನು ಸಹಾಯ", "help"
+        "who are you", "what do you do", "help", "what can you do"
     ]
 
     if any(word in q for word in greeting_words):
@@ -82,34 +81,25 @@ def clean_answer(text):
     text = text.strip()
     text = re.sub(r"\s+", " ", text)
 
-    # Remove unwanted intro lines if model adds too much fluff
-    text = text.replace("ನಮಸ್ಕಾರ,", "").strip()
-    text = text.replace("ನಮಸ್ಕಾರ.", "").strip()
-
-    # Keep only first 2 complete sentences
-    parts = re.split(r'(?<=[.?!।])\s+', text)
+    parts = re.split(r'(?<=[.?!])\s+', text)
     complete_parts = []
 
     for p in parts:
         p = p.strip()
-        # Only add sentence if it ends with proper punctuation
-        if p and p[-1] in ".?!।":
+        if p and p[-1] in ".?!":
             complete_parts.append(p)
         if len(complete_parts) == 2:
             break
 
     if complete_parts:
-        cleaned = " ".join(complete_parts).strip()
-        return cleaned
+        return " ".join(complete_parts).strip()
 
-    # fallback: trim to last safe punctuation mark
-    last_punct = max(text.rfind("."), text.rfind("?"), text.rfind("!"), text.rfind("।"))
+    last_punct = max(text.rfind("."), text.rfind("?"), text.rfind("!"))
     if last_punct != -1:
         return text[:last_punct + 1].strip()
 
-    # final fallback
-    if len(text) > 180:
-        return text[:180].strip() + "..."
+    if len(text) > 200:
+        return text[:200].strip() + "..."
     return text
 
 
@@ -117,38 +107,26 @@ def clean_answer(text):
 # MAIN AI
 # ---------------------------
 def ask_ai(question):
-    # 1. canned reply first
     canned = get_canned_reply(question)
     if canned:
         return canned
 
-    # 2. scheme context
     context = get_relevant_scheme(question)
 
-    if context:
-        context_text = f"ಮಾಹಿತಿ:\n{context}"
-    else:
-        context_text = "ಯಾವುದೇ ನಿರ್ದಿಷ್ಟ ಯೋಜನೆ ಮಾಹಿತಿ ಇಲ್ಲ. ಸಾಮಾನ್ಯ ಜ್ಞಾನದಿಂದ ಉತ್ತರಿಸಿ."
-    
-
     prompt = f"""
-ನೀವು ಉತ್ತರ ಕರ್ನಾಟಕದ ರೈತರಿಗೆ ಸಹಾಯ ಮಾಡುವ ಸರಳ ಸಹಾಯಕ.
+You are a helpful assistant for Karnataka farmers.
 
-ಕಟ್ಟುನಿಟ್ಟಿನ ನಿಯಮಗಳು:
-- ಉತ್ತರ ಕನ್ನಡದಲ್ಲಿ ಮಾತ್ರ ಕೊಡಿ
-- ಉತ್ತರ ಉತ್ತರ ಕರ್ನಾಟಕದ ಮಾತಿನ ಶೈಲಿಯಲ್ಲಿ ಇರಲಿ
-- ಪುಸ್ತಕದ ಕನ್ನಡ ಬೇಡ
-- ಹೆಚ್ಚು ಹೆಚ್ಚು 2 ವಾಕ್ಯ ಮಾತ್ರ
-- ಪ್ರತಿ ವಾಕ್ಯ ಚಿಕ್ಕದಾಗಿರಲಿ
-- ಪೂರ್ಣ ವಾಕ್ಯಗಳಲ್ಲಿ ಮಾತ್ರ ಉತ್ತರಿಸಿ
-- ಮಧ್ಯದಲ್ಲಿ ನಿಲ್ಲಿಸಬೇಡಿ
-- ಅನಗತ್ಯ ಮಾತು ಬೇಡ
-- "ನಮಸ್ಕಾರ", "ಧನ್ಯವಾದ" ತರಹದ ಹೆಚ್ಚುವರಿ ಮಾತು ಬೇಡ unless user greets
-- ಉತ್ತರ 160 ಅಕ್ಷರಗಳೊಳಗೆ ಇರಲಿ if possible
+Rules:
+- Answer in simple English only
+- Maximum 2 sentences
+- Be specific, mention scheme names and benefit amounts
+- Complete sentences only
+- No greetings or extra words
 
-{context_text}
+Scheme Information:
+{context}
 
-ರೈತನ ಪ್ರಶ್ನೆ:
+Farmer's Question:
 {question}
 """
 
@@ -158,14 +136,14 @@ def ask_ai(question):
             messages=[
                 {
                     "role": "system",
-                    "content": "You answer Karnataka farmer queries in very short spoken Kannada. Always finish sentences completely."
+                    "content": "You are a Karnataka farmer assistant. Answer in simple English. Always give specific scheme names and benefit amounts. Complete every sentence."
                 },
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            max_tokens=180,
+            max_tokens=250,
             temperature=0.2
         )
 

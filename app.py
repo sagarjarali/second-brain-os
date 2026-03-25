@@ -18,7 +18,6 @@ def process_voice_and_reply(media_url, twilio_sid, twilio_token, sender_number):
     try:
         print("Voice processing started")
 
-        # Lazy import here
         from voice import transcribe_audio, translate_to_english, translate_to_kannada
         from brain import ask_ai
 
@@ -61,13 +60,15 @@ def webhook():
             thread.start()
             return """<?xml version="1.0" encoding="UTF-8"?><Response></Response>""", 200
 
-        # Lazy import here too
         from brain import ask_ai
+        from voice import translate_to_english, translate_to_kannada
 
         if not incoming_message:
             answer = "ದಯವಿಟ್ಟು ನಿಮ್ಮ ಪ್ರಶ್ನೆಯನ್ನು ಕಳುಹಿಸಿ."
         else:
-            answer = ask_ai(incoming_message)
+            english_question = translate_to_english(incoming_message)
+            english_answer = ask_ai(english_question)
+            answer = translate_to_kannada(english_answer)
 
         return f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
