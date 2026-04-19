@@ -2,4 +2,5 @@
 __pycache__
 .venv
 schemes_db
-audio.ogg
+audio.oggd
+chroma_db/

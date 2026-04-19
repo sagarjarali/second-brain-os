@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import os
 import re
 from sentence_transformers import SentenceTransformer
-import numpy as np
+import chromadb
 load_dotenv()
 
 client = OpenAI(
@@ -23,31 +23,28 @@ def load_schemes():
 
 schemes = load_schemes()
 embedder = SentenceTransformer('all-MiniLM-L6-v2')
-scheme_embeddings = embedder.encode(schemes)
+
+chroma_client = chromadb.PersistentClient(path="./chroma_db")
+
+collection = chroma_client.get_or_create_collection(name="schemes")
+
+if collection.count() == 0:
+    scheme_embeddings = embedder.encode(schemes).tolist()
+    ids = [str(i) for i in range(len(schemes))]
+    collection.add(embeddings=scheme_embeddings, documents=schemes, ids=ids)
 
 # ---------------------------
 # SIMPLE RETRIEVAL
 # ---------------------------
 def get_relevant_scheme(question):
-    question_embedding = embedder.encode([question])
+    question_embedding = embedder.encode([question]).tolist()
     
-    similarities = np.dot(scheme_embeddings, question_embedding.T).flatten()
+    results = collection.query(
+        query_embeddings=question_embedding,
+        n_results=1
+    )
     
-    best_index = int(np.argmax(similarities))
-    
-    return schemes[best_index]
-
-    for s in schemes:
-        score = sum(1 for word in q.split() if len(word) > 2 and word in s.lower())
-        if score > best_score:
-            best_score = score
-            best_match = s
-
-    if best_score >= 1:
-        return best_match
-
-    return "\n\n".join(schemes[:3])
-
+    return results['documents'][0][0]
 
 # ---------------------------
 # SMALL RULE-BASED REPLIES

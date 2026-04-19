@@ -6,3 +6,5 @@ twilio
 python-dotenv
 requests
 gunicorn
+sentence-transformers
+chromadb
