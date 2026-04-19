@@ -2,7 +2,8 @@ from openai import OpenAI
 from dotenv import load_dotenv
 import os
 import re
-
+from sentence_transformers import SentenceTransformer
+import numpy as np
 load_dotenv()
 
 client = OpenAI(
@@ -21,15 +22,20 @@ def load_schemes():
         return []
 
 schemes = load_schemes()
-
+embedder = SentenceTransformer('all-MiniLM-L6-v2')
+scheme_embeddings = embedder.encode(schemes)
 
 # ---------------------------
 # SIMPLE RETRIEVAL
 # ---------------------------
 def get_relevant_scheme(question):
-    q = question.lower()
-    best_match = None
-    best_score = 0
+    question_embedding = embedder.encode([question])
+    
+    similarities = np.dot(scheme_embeddings, question_embedding.T).flatten()
+    
+    best_index = int(np.argmax(similarities))
+    
+    return schemes[best_index]
 
     for s in schemes:
         score = sum(1 for word in q.split() if len(word) > 2 and word in s.lower())
@@ -148,3 +154,9 @@ Farmer's Question:
     except Exception as e:
         print("AI ERROR:", e)
         return "ಸ್ವಲ್ಪ ತೊಂದರೆ ಇದೆ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+    
+if __name__ == "__main__":
+    test = "my crops are dying due to lack of water"
+    result = get_relevant_scheme(test)
+    print("MATCHED SCHEME:")
+    print(result)
